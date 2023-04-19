@@ -1,0 +1,28 @@
+[package]
+name = "tokio-metrics-collector"
+version = "0.1.0-beta.0"
+authors = ["Hanaasagi <ambiguous404@gmail.com>"]
+license = "MIT OR Apache-2.0"
+edition = "2021"
+repository = "https://github.com/Hanaasagi/tokio-metrics-collector"
+description = """
+Provides utilities for collecting Prometheus-compatible metrics from Tokio runtime and tasks.
+"""
+keywords = ["metrics", "tokio", "prometheus"]
+categories = ["development-tools"]
+
+[features]
+default = ["rt"]
+rt = ["tokio"]
+
+[dependencies]
+lazy_static = "1.4.0"
+prometheus = "0.13.3"
+tokio-metrics = "0.2.2"
+tokio = { version = "1.26.0", features = ["rt"], optional = true }
+parking_lot = "0.12.1"
+
+[dev-dependencies]
+axum = "0.6.12"
+tokio = { version = "1.27", features = ["rt", "macros", "rt-multi-thread"]}
+tracing-subscriber = "0.3.16"
