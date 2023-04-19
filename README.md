@@ -4,7 +4,7 @@ Provides utilities for collecting Prometheus-compatible metrics from Tokio runti
 
 ```toml
 [dependencies]
-tokio-metrics = { version = "0.1.0-beta.0" }
+tokio-metrics-collector = { version = "0.1.0-beta.0" }
 ```
 
 ## QuickStart
@@ -55,6 +55,8 @@ async fn main() {
     }
 }
 ```
+
+And a http server example, you can find in `examples/server.rs`.
 
 ## Runtime Metrics
 
@@ -183,3 +185,9 @@ rustdocflags = ["--cfg", "tokio_unstable"]
 [`total_long_delay_count`]: https://docs.rs/tokio-metrics/0.2.*/tokio_metrics/struct.TaskMetrics.html#structfield.total_long_delay_count
 [`total_long_delay_duration`]: https://docs.rs/tokio-metrics/0.2.*/tokio_metrics/struct.TaskMetrics.html#structfield.total_long_delay_duration
 [`long_delay_ratio`]: https://docs.rs/tokio-metrics/0.2.*/tokio_metrics/struct.TaskMetrics.html#method.long_delay_ratio
+
+## License
+
+tokio-metrics-collector is distributed under the terms of both the MIT license and the Apache License (Version 2.0).
+
+See LICENSE-APACHE and LICENSE-MIT, and COPYRIGHT for details.
