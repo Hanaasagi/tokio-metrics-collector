@@ -60,9 +60,9 @@ async fn send_email() -> &'static str {
     task_collector.add("email", monitor.clone());
 
     // Background task to send an email
-    tokio::spawn(async {
+    tokio::spawn(monitor.clone().instrument(async {
         tokio::time::sleep(Duration::from_secs(2)).await;
-    });
+    }));
     "Email is sent"
 }
 

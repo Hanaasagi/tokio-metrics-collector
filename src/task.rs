@@ -14,25 +14,25 @@ const TASK_LABEL: &str = "task";
 
 // Reference: https://docs.rs/tokio-metrics/latest/tokio_metrics/struct.RuntimeMetrics.html
 #[derive(Debug, Clone)]
-pub struct TaskMetrics {
-    pub instrumented_count: IntGaugeVec,
-    pub dropped_count: IntGaugeVec,
-    pub first_poll_count: IntGaugeVec,
-    pub total_first_poll_delay: CounterVec,
-    pub total_idled_count: IntCounterVec,
-    pub total_idle_duration: CounterVec,
-    pub total_scheduled_count: IntCounterVec,
-    pub total_scheduled_duration: CounterVec,
-    pub total_poll_count: IntCounterVec,
-    pub total_poll_duration: CounterVec,
-    pub total_fast_poll_count: IntCounterVec,
-    pub total_fast_poll_duration: CounterVec,
-    pub total_slow_poll_count: IntCounterVec,
-    pub total_slow_poll_duration: CounterVec,
-    pub total_short_delay_count: IntCounterVec,
-    pub total_long_delay_count: IntCounterVec,
-    pub total_short_delay_duration: CounterVec,
-    pub total_long_delay_duration: CounterVec,
+struct TaskMetrics {
+    instrumented_count: IntGaugeVec,
+    dropped_count: IntGaugeVec,
+    first_poll_count: IntGaugeVec,
+    total_first_poll_delay: CounterVec,
+    total_idled_count: IntCounterVec,
+    total_idle_duration: CounterVec,
+    total_scheduled_count: IntCounterVec,
+    total_scheduled_duration: CounterVec,
+    total_poll_count: IntCounterVec,
+    total_poll_duration: CounterVec,
+    total_fast_poll_count: IntCounterVec,
+    total_fast_poll_duration: CounterVec,
+    total_slow_poll_count: IntCounterVec,
+    total_slow_poll_duration: CounterVec,
+    total_short_delay_count: IntCounterVec,
+    total_long_delay_count: IntCounterVec,
+    total_short_delay_duration: CounterVec,
+    total_long_delay_duration: CounterVec,
 }
 
 impl TaskMetrics {
@@ -241,8 +241,6 @@ impl TaskMetrics {
     }
 
     fn update(&self, label: &str, data: TaskMetricsData) {
-        // counter only support inc and inc_by not set
-
         macro_rules! update_counter {
             ( $field:ident,  "int" ) => {{
                 let past = self.$field.with_label_values(&[label]).get() as u64;
@@ -259,6 +257,16 @@ impl TaskMetrics {
                 self.$field.with_label_values(&[label]).inc_by(new - past);
             }};
         }
+
+        self.instrumented_count
+            .with_label_values(&[label])
+            .set(data.instrumented_count as i64);
+        self.dropped_count
+            .with_label_values(&[label])
+            .set(data.dropped_count as i64);
+        self.first_poll_count
+            .with_label_values(&[label])
+            .set(data.first_poll_count as i64);
 
         update_counter!(total_first_poll_delay, "duration");
         update_counter!(total_idled_count, "int");
