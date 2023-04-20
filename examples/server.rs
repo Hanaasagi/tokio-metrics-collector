@@ -20,7 +20,7 @@ async fn main() {
         .unwrap();
 
     // create a monitor for collecting `user` metrics
-    let monitor_get_user = tokio_metrics::TaskMonitor::new();
+    let monitor_get_user = tokio_metrics_collector::TaskMonitor::new();
     task_collector.add("get_user", monitor_get_user.clone());
 
     // create app
@@ -55,7 +55,7 @@ async fn root() -> &'static str {
 }
 
 async fn send_email() -> &'static str {
-    let monitor = tokio_metrics::TaskMonitor::new();
+    let monitor = tokio_metrics_collector::TaskMonitor::new();
     let task_collector = tokio_metrics_collector::default_task_collector();
     task_collector.add("email", monitor.clone());
 

@@ -42,7 +42,7 @@ async fn main() {
         .unwrap();
 
     // construct a TaskMonitor
-    let monitor = tokio_metrics::TaskMonitor::new();
+    let monitor = tokio_metrics_collector::TaskMonitor::new();
     // add this monitor to task collector with label 'simple_task'
     task_collector.add("simple_task", monitor.clone());
 
