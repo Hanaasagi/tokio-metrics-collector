@@ -18,8 +18,12 @@ Provides utilities for collecting Prometheus-compatible metrics from Tokio runti
 
 ```toml
 [dependencies]
-tokio-metrics-collector = { version = "0.1.0-beta.1" }
+tokio-metrics-collector = { version = "0.1.0" }
 ```
+
+Documentation:
+
+- [API reference (docs.rs)](https://docs.rs/tokio-metrics-collector/)
 
 ## QuickStart
 
