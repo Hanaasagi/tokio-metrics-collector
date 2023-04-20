@@ -337,6 +337,7 @@ impl TaskMetrics {
     }
 }
 
+/// TaskCollector
 #[derive(Debug)]
 pub struct TaskCollector {
     metrics: TaskMetrics,
@@ -344,6 +345,7 @@ pub struct TaskCollector {
 }
 
 impl TaskCollector {
+    /// Create a [`TaskCollector`] in namespace.
     pub fn new<S: Into<String>>(namespace: S) -> Self {
         let producer = RwLock::new(HashMap::new());
         let metrics = TaskMetrics::new(namespace);
@@ -351,10 +353,12 @@ impl TaskCollector {
         Self { metrics, producer }
     }
 
+    /// Add a [`TaskMonitor`] to collector.
     pub fn add(&self, label: &str, monitor: TaskMonitor) {
         self.producer.write().insert(label.to_string(), monitor);
     }
 
+    /// Remove a [`TaskMonitor`] from collector.
     pub fn remove(&mut self, label: &str) {
         self.producer.write().remove(label);
     }
@@ -421,6 +425,7 @@ lazy_static! {
     };
 }
 
+/// Get the global [`TaskCollector`], the namespace is under `""`.
 pub fn default_collector() -> &'static TaskCollector {
     lazy_static::initialize(&DEFAULT_COLLECTOR);
     &DEFAULT_COLLECTOR

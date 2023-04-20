@@ -297,12 +297,14 @@ impl RuntimeMetrics {
     }
 }
 
+/// RuntimeCollector
 pub struct RuntimeCollector {
     metrics: RuntimeMetrics,
     producer: Mutex<RuntimeIntervals>,
 }
 
 impl RuntimeCollector {
+    /// Create a [`RuntimeCollector`] in namespace.
     pub fn new<S: Into<String>>(monitor: RuntimeMonitor, namespace: S) -> Self {
         let producer = Mutex::new(monitor.intervals());
         let metrics = RuntimeMetrics::new(namespace);
@@ -360,6 +362,7 @@ lazy_static! {
     };
 }
 
+/// Get the global [`RuntimeCollector`], the namespace is under "".
 pub fn default_collector() -> &'static RuntimeCollector {
     lazy_static::initialize(&DEFAULT_COLLECTOR);
     &DEFAULT_COLLECTOR
