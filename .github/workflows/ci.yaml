@@ -17,6 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Setup Rust
+        run: |
+          rustup toolchain install nightly --component rust-src
+          rustup default nightly
       - name: Build
         run: cargo build --verbose
       - name: Run tests
