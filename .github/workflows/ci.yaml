@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  test:
+    name: Tests on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
+        env:
+          CARGO_INCREMENTAL: "0"
+          RUSTFLAGS: "--cfg tokio_unstable -Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests"
+          RUSTDOCFLAGS: "--cfg tokio_unstable -Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests"
+      - name: rust-grcov
+        uses: actions-rs/grcov@v0.1.6
+      - name: Codecov
+        uses: codecov/codecov-action@v3.1.2
+        with:
+          verbose: true
+          fail_ci_if_error: true
