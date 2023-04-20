@@ -11,9 +11,10 @@ use tokio_metrics::TaskMetrics as TaskMetricsData;
 use tokio_metrics::TaskMonitor;
 
 const TASK_LABEL: &str = "task";
+const METRICS_COUNT: usize = 18;
 
 // Reference: https://docs.rs/tokio-metrics/latest/tokio_metrics/struct.RuntimeMetrics.html
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct TaskMetrics {
     instrumented_count: IntGaugeVec,
     dropped_count: IntGaugeVec,
@@ -423,4 +424,96 @@ lazy_static! {
 pub fn default_collector() -> &'static TaskCollector {
     lazy_static::initialize(&DEFAULT_COLLECTOR);
     &DEFAULT_COLLECTOR
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_task_collector_descs() {
+        let monitor = tokio_metrics::TaskMonitor::new();
+        let tc = TaskCollector::new("");
+
+        let descs = tc.desc();
+        assert_eq!(descs.len(), METRICS_COUNT);
+        assert_eq!(
+            descs[0].fq_name,
+            "tokio_task_instrumented_count".to_string()
+        );
+        assert_eq!(descs[0].help, "The number of tasks instrumented.");
+        assert_eq!(descs[0].variable_labels.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_runtime_collector_metrics() {
+        let monitor = tokio_metrics::TaskMonitor::new();
+        let tc = TaskCollector::new("");
+
+        tc.add("custom", monitor.clone());
+
+        monitor.instrument(tokio::spawn(async {
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await
+        }));
+
+        let metrics = tc.collect();
+        assert_eq!(metrics.len(), METRICS_COUNT);
+        assert_eq!(metrics[0].get_name(), "tokio_task_instrumented_count");
+        assert_eq!(
+            metrics[0].get_help(),
+            "The number of tasks instrumented.".to_string()
+        );
+        assert_eq!(metrics[0].get_metric().len(), 1);
+        assert_eq!(metrics[0].get_metric()[0].get_gauge().get_value(), 1.0);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+    async fn test_default() {
+        let collector = default_collector();
+        assert_eq!(collector.desc().len(), METRICS_COUNT);
+        let metrics = collector.collect();
+        assert_eq!(metrics.len(), METRICS_COUNT);
+        assert_eq!(metrics[0].get_name(), "tokio_task_instrumented_count");
+        assert_eq!(
+            metrics[0].get_help(),
+            "The number of tasks instrumented.".to_string()
+        );
+        assert_eq!(metrics[0].get_metric().len(), 0);
+    }
+    #[tokio::test]
+    async fn test_integrated_with_prometheus() {
+        use prometheus::Encoder;
+
+        let tc = default_collector();
+        prometheus::default_registry()
+            .register(Box::new(tc))
+            .unwrap();
+
+        let monitor = tokio_metrics::TaskMonitor::new();
+        tc.add("custom", monitor.clone());
+
+        monitor.instrument(tokio::spawn(async {
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await
+        }));
+
+        let encoder = prometheus::TextEncoder::new();
+
+        let mut buffer = Vec::new();
+        encoder
+            .encode(&prometheus::default_registry().gather(), &mut buffer)
+            .expect("Failed to encode");
+        String::from_utf8(buffer.clone()).expect("Failed to convert to string.");
+    }
+
+    #[test]
+    fn test_send() {
+        fn test<C: Send>() {}
+        test::<DEFAULT_COLLECTOR>();
+    }
+
+    #[test]
+    fn test_sync() {
+        fn test<C: Sync>() {}
+        test::<DEFAULT_COLLECTOR>();
+    }
 }

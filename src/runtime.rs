@@ -12,6 +12,8 @@ use tokio_metrics::RuntimeIntervals;
 use tokio_metrics::RuntimeMetrics as RuntimeMetricsData;
 use tokio_metrics::RuntimeMonitor;
 
+const METRICS_COUNT: usize = 15;
+
 // Reference: https://docs.rs/tokio-metrics/latest/tokio_metrics/struct.RuntimeMetrics.html
 #[derive(Debug)]
 struct RuntimeMetrics {
@@ -266,7 +268,7 @@ impl RuntimeMetrics {
         desc.extend(self.budget_forced_yield_count.desc());
         desc.extend(self.io_driver_ready_count.desc());
 
-        assert_eq!(desc.len(), 15);
+        debug_assert_eq!(desc.len(), METRICS_COUNT);
 
         desc
     }
@@ -289,7 +291,7 @@ impl RuntimeMetrics {
         metrics.extend(self.budget_forced_yield_count.collect());
         metrics.extend(self.io_driver_ready_count.collect());
 
-        assert_eq!(metrics.len(), 15);
+        debug_assert_eq!(metrics.len(), METRICS_COUNT);
 
         metrics
     }
@@ -361,4 +363,89 @@ lazy_static! {
 pub fn default_collector() -> &'static RuntimeCollector {
     lazy_static::initialize(&DEFAULT_COLLECTOR);
     &DEFAULT_COLLECTOR
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::runtime;
+
+    #[test]
+    fn test_runtime_collector_descs() {
+        let rt = runtime::Builder::new_current_thread().build().unwrap();
+        let mt = tokio_metrics::RuntimeMonitor::new(&rt.handle());
+        let rc = RuntimeCollector::new(mt, "");
+
+        let descs = rc.desc();
+        assert_eq!(descs.len(), METRICS_COUNT);
+        assert_eq!(descs[0].fq_name, "tokio_workers_count".to_string());
+        assert_eq!(
+            descs[0].help,
+            "The number of worker threads used by the runtime."
+        );
+        assert_eq!(descs[0].variable_labels.len(), 0);
+    }
+
+    #[test]
+    fn test_runtime_collector_metrics() {
+        let rt = runtime::Builder::new_current_thread().build().unwrap();
+        let mt = tokio_metrics::RuntimeMonitor::new(&rt.handle());
+        let rc = RuntimeCollector::new(mt, "");
+
+        let metrics = rc.collect();
+        assert_eq!(metrics.len(), METRICS_COUNT);
+        assert_eq!(metrics[0].get_name(), "tokio_workers_count");
+        assert_eq!(
+            metrics[0].get_help(),
+            "The number of worker threads used by the runtime."
+        );
+        assert_eq!(metrics[0].get_metric().len(), 1);
+        assert_eq!(metrics[0].get_metric()[0].get_gauge().get_value(), 1.0);
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
+    async fn test_default() {
+        let collector = default_collector();
+        assert_eq!(collector.desc().len(), METRICS_COUNT);
+        let metrics = collector.collect();
+        assert_eq!(metrics.len(), METRICS_COUNT);
+        assert_eq!(metrics[0].get_name(), "tokio_workers_count");
+        assert_eq!(
+            metrics[0].get_help(),
+            "The number of worker threads used by the runtime."
+        );
+        assert_eq!(metrics[0].get_metric().len(), 1);
+        // 8 worker threads
+        assert_eq!(metrics[0].get_metric()[0].get_gauge().get_value(), 8.0);
+    }
+
+    #[tokio::test]
+    async fn test_integrated_with_prometheus() {
+        use prometheus::Encoder;
+
+        let tc = default_collector();
+        prometheus::default_registry()
+            .register(Box::new(tc))
+            .unwrap();
+
+        let encoder = prometheus::TextEncoder::new();
+
+        let mut buffer = Vec::new();
+        encoder
+            .encode(&prometheus::default_registry().gather(), &mut buffer)
+            .expect("Failed to encode");
+        String::from_utf8(buffer.clone()).expect("Failed to convert to string.");
+    }
+
+    #[test]
+    fn test_send() {
+        fn test<C: Send>() {}
+        test::<DEFAULT_COLLECTOR>();
+    }
+
+    #[test]
+    fn test_sync() {
+        fn test<C: Sync>() {}
+        test::<DEFAULT_COLLECTOR>();
+    }
 }
