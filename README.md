@@ -18,7 +18,7 @@ Provides utilities for collecting Prometheus-compatible metrics from Tokio runti
 
 ```toml
 [dependencies]
-tokio-metrics-collector = { version = "0.1.0-beta.0" }
+tokio-metrics-collector = { version = "0.1.0-beta.1" }
 ```
 
 ## QuickStart
