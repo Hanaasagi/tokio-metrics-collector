@@ -1,5 +1,19 @@
 # Tokio metrics collector for Prometheus
 
+[![tokio-metrics-collector on GitHub Action][action-image]][action]
+[![codecov][codecov-image]][codecov]
+[![tokio-metrics-collector on crates.io][cratesio-image]][cratesio]
+[![tokio-metrics-collector on docs.rs][docsrs-image]][docsrs]
+
+[action-image]: https://github.com/Hanaasagi/tokio-metrics-collector/actions/workflows/ci.yaml/badge.svg
+[action]: https://github.com/Hanaasagi/tokio-metrics-collector/actions/workflows/ci.yaml
+[codecov-image]: https://codecov.io/gh/Hanaasagi/tokio-metrics-collector/branch/master/graph/badge.svg?token=TP67FTFT1K
+[codecov]: https://codecov.io/gh/Hanaasagi/tokio-metrics-collector
+[cratesio-image]: https://img.shields.io/crates/v/tokio-metrics-collector.svg
+[cratesio]: https://crates.io/crates/tokio-metrics-collector
+[docsrs-image]: https://docs.rs/tokio-metrics-collector/badge.svg
+[docsrs]: https://docs.rs/tokio-metrics-collector
+
 Provides utilities for collecting Prometheus-compatible metrics from Tokio runtime and tasks.
 
 ```toml
