@@ -19,13 +19,13 @@ rt = ["tokio"]
 lazy_static = "1.4.0"
 prometheus = "0.13.3"
 tokio-metrics = "0.2.2"
-tokio = { version = "1.26.0", features = ["rt"], optional = true }
+tokio = { version = "1.28.0", features = ["rt"], optional = true }
 parking_lot = "0.12.1"
 
 [dev-dependencies]
-axum = "0.6.12"
-tokio = { version = "1.27", features = ["rt", "macros", "rt-multi-thread"]}
-tracing-subscriber = "0.3.16"
+axum = "0.6.17"
+tokio = { version = "1.28", features = ["rt", "macros", "rt-multi-thread"]}
+tracing-subscriber = "0.3.17"
 
 [package.metadata.docs.rs]
 all-features = true
