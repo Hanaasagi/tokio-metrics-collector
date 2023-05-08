@@ -426,7 +426,8 @@ mod tests {
     async fn test_integrated_with_prometheus() {
         use prometheus::Encoder;
 
-        let tc = default_collector();
+        let tc = RuntimeCollector::default();
+
         prometheus::default_registry()
             .register(Box::new(tc))
             .unwrap();

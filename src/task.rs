@@ -540,13 +540,14 @@ mod tests {
     async fn test_integrated_with_prometheus() {
         use prometheus::Encoder;
 
-        let tc = default_collector();
-        prometheus::default_registry()
-            .register(Box::new(tc))
-            .unwrap();
+        let tc = TaskCollector::new("");
 
         let monitor = tokio_metrics::TaskMonitor::new();
         tc.add("custom", monitor.clone()).unwrap();
+
+        prometheus::default_registry()
+            .register(Box::new(tc))
+            .unwrap();
 
         monitor.instrument(tokio::spawn(async {
             tokio::time::sleep(std::time::Duration::from_secs(2)).await
