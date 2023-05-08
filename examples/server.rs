@@ -1,6 +1,8 @@
+use axum::extract::State;
 use axum::{routing::get, Router};
 use std::net::SocketAddr;
 use std::time::Duration;
+use tokio_metrics::TaskMonitor;
 
 #[tokio::main]
 async fn main() {
@@ -21,7 +23,13 @@ async fn main() {
 
     // create a monitor for collecting `user` metrics
     let monitor_get_user = tokio_metrics_collector::TaskMonitor::new();
-    task_collector.add("get_user", monitor_get_user.clone());
+    task_collector
+        .add("get_user", monitor_get_user.clone())
+        .unwrap();
+
+    // create a monitor for collecting `send_email` metrics
+    let email_monitor = tokio_metrics_collector::TaskMonitor::new();
+    task_collector.add("email", email_monitor.clone()).unwrap();
 
     // create app
     let app = Router::new()
@@ -40,7 +48,9 @@ async fn main() {
                 }
             }),
         )
-        .route("/metrics", get(metrics));
+        .route("/metrics", get(metrics))
+        // share the monitor with routes
+        .with_state(email_monitor);
 
     // bind and serve
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
@@ -54,13 +64,9 @@ async fn root() -> &'static str {
     "Hello, World!"
 }
 
-async fn send_email() -> &'static str {
-    let monitor = tokio_metrics_collector::TaskMonitor::new();
-    let task_collector = tokio_metrics_collector::default_task_collector();
-    task_collector.add("email", monitor.clone());
-
+async fn send_email(State(email_monitor): State<TaskMonitor>) -> &'static str {
     // Background task to send an email
-    tokio::spawn(monitor.clone().instrument(async {
+    tokio::spawn(email_monitor.clone().instrument(async {
         tokio::time::sleep(Duration::from_secs(2)).await;
     }));
     "Email is sent"

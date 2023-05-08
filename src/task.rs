@@ -1,5 +1,8 @@
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
+use std::error::Error;
+use std::fmt;
+
 use prometheus::{
     core::Desc,
     core::{Collector, Opts},
@@ -11,7 +14,27 @@ use tokio_metrics::TaskMetrics as TaskMetricsData;
 use tokio_metrics::TaskMonitor;
 
 const TASK_LABEL: &str = "task";
+#[allow(unused)]
 const METRICS_COUNT: usize = 18;
+
+#[derive(Debug)]
+pub struct LabelAlreadyExists {
+    label: String,
+}
+
+impl LabelAlreadyExists {
+    fn new(label: String) -> Self {
+        Self { label }
+    }
+}
+
+impl fmt::Display for LabelAlreadyExists {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "label '{}' already exists", self.label)
+    }
+}
+
+impl Error for LabelAlreadyExists {}
 
 // Reference: https://docs.rs/tokio-metrics/latest/tokio_metrics/struct.RuntimeMetrics.html
 #[derive(Debug)]
@@ -244,30 +267,26 @@ impl TaskMetrics {
     fn update(&self, label: &str, data: TaskMetricsData) {
         macro_rules! update_counter {
             ( $field:ident,  "int" ) => {{
-                let past = self.$field.with_label_values(&[label]).get() as u64;
                 let new = data.$field as u64;
-                debug_assert!(new >= past, "new: {new} >= past: {past}");
-                self.$field
-                    .with_label_values(&[label])
-                    .inc_by(new.saturating_sub(past));
+                self.$field.with_label_values(&[label]).inc_by(new);
             }};
             ( $field:ident,  "duration" ) => {{
-                let past = self.$field.with_label_values(&[label]).get();
                 let new = data.$field.as_secs_f64();
-                debug_assert!(new >= past, "new: {new} >= past: {past}");
-                self.$field.with_label_values(&[label]).inc_by(new - past);
+                self.$field.with_label_values(&[label]).inc_by(new);
             }};
         }
 
-        self.instrumented_count
-            .with_label_values(&[label])
-            .set(data.instrumented_count as i64);
-        self.dropped_count
-            .with_label_values(&[label])
-            .set(data.dropped_count as i64);
-        self.first_poll_count
-            .with_label_values(&[label])
-            .set(data.first_poll_count as i64);
+        macro_rules! update_gauge {
+            ( $field:ident) => {
+                self.$field
+                    .with_label_values(&[label])
+                    .set(data.$field as i64);
+            };
+        }
+
+        update_gauge!(instrumented_count);
+        update_gauge!(dropped_count);
+        update_gauge!(first_poll_count);
 
         update_counter!(total_first_poll_delay, "duration");
         update_counter!(total_idled_count, "int");
@@ -338,10 +357,10 @@ impl TaskMetrics {
 }
 
 /// TaskCollector
-#[derive(Debug)]
 pub struct TaskCollector {
     metrics: TaskMetrics,
-    producer: RwLock<HashMap<String, TaskMonitor>>,
+    producer:
+        RwLock<HashMap<String, Box<dyn Iterator<Item = tokio_metrics::TaskMetrics> + Send + Sync>>>,
 }
 
 impl TaskCollector {
@@ -354,8 +373,16 @@ impl TaskCollector {
     }
 
     /// Add a [`TaskMonitor`] to collector.
-    pub fn add(&self, label: &str, monitor: TaskMonitor) {
-        self.producer.write().insert(label.to_string(), monitor);
+    /// If the label is already used by another monitor, an error will be thrown.
+    pub fn add(&self, label: &str, monitor: TaskMonitor) -> Result<(), LabelAlreadyExists> {
+        if self.producer.read().contains_key(label) {
+            return Err(LabelAlreadyExists::new(label.into()));
+        }
+        self.producer
+            .write()
+            .insert(label.to_string(), Box::new(monitor.intervals()));
+
+        Ok(())
     }
 
     /// Remove a [`TaskMonitor`] from collector.
@@ -364,8 +391,8 @@ impl TaskCollector {
     }
 
     fn get_metrics_data_by_label(&self, label: &str) -> TaskMetricsData {
-        let data = self.producer.read().get(label).unwrap().cumulative();
-        data
+        let data = self.producer.write().get_mut(label).unwrap().next();
+        data.unwrap()
     }
 }
 
@@ -450,12 +477,28 @@ mod tests {
         assert_eq!(descs[0].variable_labels.len(), 1);
     }
 
+    #[test]
+    fn test_task_collector_add() {
+        let monitor = tokio_metrics::TaskMonitor::new();
+        let tc = TaskCollector::new("");
+
+        let res = tc.add("custom", monitor.clone());
+        assert!(res.is_ok());
+
+        let res2 = tc.add("custom", monitor.clone());
+        assert!(res2.is_err());
+        assert_eq!(
+            format!("{}", res2.err().unwrap()),
+            "label 'custom' already exists".to_string()
+        );
+    }
+
     #[tokio::test]
     async fn test_runtime_collector_metrics() {
         let monitor = tokio_metrics::TaskMonitor::new();
         let tc = TaskCollector::new("");
 
-        tc.add("custom", monitor.clone());
+        tc.add("custom", monitor.clone()).unwrap();
 
         monitor.instrument(tokio::spawn(async {
             tokio::time::sleep(std::time::Duration::from_secs(2)).await
@@ -485,17 +528,19 @@ mod tests {
         );
         assert_eq!(metrics[0].get_metric().len(), 0);
     }
+
     #[tokio::test]
     async fn test_integrated_with_prometheus() {
         use prometheus::Encoder;
 
-        let tc = default_collector();
+        let tc = TaskCollector::new("");
+
+        let monitor = tokio_metrics::TaskMonitor::new();
+        tc.add("custom", monitor.clone()).unwrap();
+
         prometheus::default_registry()
             .register(Box::new(tc))
             .unwrap();
-
-        let monitor = tokio_metrics::TaskMonitor::new();
-        tc.add("custom", monitor.clone());
 
         monitor.instrument(tokio::spawn(async {
             tokio::time::sleep(std::time::Duration::from_secs(2)).await
