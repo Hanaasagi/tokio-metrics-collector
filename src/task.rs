@@ -381,6 +381,7 @@ impl TaskCollector {
     }
 
     /// Add a [`TaskMonitor`] to collector.
+    /// If the label is already used by another monitor, an error will be thrown.
     pub fn add(&self, label: &str, monitor: TaskMonitor) -> Result<(), LabelAlreadyExists> {
         if self.producer.read().contains_key(label) {
             return Err(LabelAlreadyExists::new(label.into()));
