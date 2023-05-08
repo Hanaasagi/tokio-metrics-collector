@@ -99,36 +99,36 @@ rustflags = ["--cfg", "tokio_unstable"]
 rustdocflags = ["--cfg", "tokio_unstable"]
 ```
 
-- **[`workers_count`]**  
-  [`Gauge`] The number of worker threads used by the runtime.
-- **[`total_park_count`]**  
-  [`Counter] The number of times worker threads parked.
-- **[`total_noop_count`]**  
-  [`Counter] The number of times worker threads unparked but performed no work before parking again.
-- **[`total_steal_count`]**  
-  [`Counter] The number of tasks worker threads stole from another worker thread.
-- **[`total_steal_operations`]**  
-  [`Counter] The number of times worker threads stole tasks from another worker thread.
-- **[`num_remote_schedules`]**  
-  [`Counter] The number of tasks scheduled from outside of the runtime.
-- **[`total_local_schedule_count`]**  
-  [`Counter] The number of tasks scheduled from worker threads.
-- **[`total_overflow_count`]**  
-  [`Counter] The number of times worker threads saturated their local queues.
-- **[`total_polls_count`]**  
-  [`Counter] The number of tasks that have been polled across all worker threads.
-- **[`total_busy_duration`]**  
-  [`Counter] The amount of time worker threads were busy.
-- **[`injection_queue_depth`]**  
-  [`Gauge`] The number of tasks currently scheduled in the runtime's injection queue.
-- **[`total_local_queue_depth`]**  
-  [`Gauge`] The total number of tasks currently scheduled in workers' local queues.
-- **[`elapsed`]**  
-  [`Counter`] Total amount of time elapsed since observing runtime metrics.
-- **[`budget_forced_yield_count`]**  
-  [`Counter`] The number of times that a task was forced to yield because it exhausted its budget.
-- **[`io_driver_ready_count`]**  
-  [`Counter`] The number of ready events received from the I/O driver.
+- **[`workers_count`]** | type: Gauge  
+  The number of worker threads used by the runtime.
+- **[`total_park_count`]** | type: Counter  
+  The number of times worker threads parked.
+- **[`total_noop_count`]** | type: Counter  
+  The number of times worker threads unparked but performed no work before parking again.
+- **[`total_steal_count`]** | type: Counter  
+  The number of tasks worker threads stole from another worker thread.
+- **[`total_steal_operations`]** | type: Counter  
+  The number of times worker threads stole tasks from another worker thread.
+- **[`num_remote_schedules`]** | type: Counter  
+  The number of tasks scheduled from outside of the runtime.
+- **[`total_local_schedule_count`]** | type: Counter  
+  The number of tasks scheduled from worker threads.
+- **[`total_overflow_count`]** | type: Counter  
+  The number of times worker threads saturated their local queues.
+- **[`total_polls_count`]** | type: Counter  
+  The number of tasks that have been polled across all worker threads.
+- **[`total_busy_duration`]** | type: Counter  
+  The amount of time worker threads were busy.
+- **[`injection_queue_depth`]** | type: Gauge  
+  The number of tasks currently scheduled in the runtime's injection queue.
+- **[`total_local_queue_depth`]** | type: Gauge  
+  The total number of tasks currently scheduled in workers' local queues.
+- **[`elapsed`]** | type: Counter  
+  Total amount of time elapsed since observing runtime metrics.
+- **[`budget_forced_yield_count`]** | type: Counter  
+  The number of times that a task was forced to yield because it exhausted its budget.
+- **[`io_driver_ready_count`]** | type: Counter
+  The number of ready events received from the I/O driver.
 
 [`workers_count`]: https://docs.rs/tokio-metrics/0.2.*/tokio_metrics/struct.RuntimeMetrics.html#structfield.workers_count
 [`total_park_count`]: https://docs.rs/tokio-metrics/0.2.*/tokio_metrics/struct.RuntimeMetrics.html#structfield.total_park_count
@@ -150,42 +150,42 @@ rustdocflags = ["--cfg", "tokio_unstable"]
 
 ## Task Metrics
 
-- **[`instrumented_count`]**  
-  [`Gauge`] The number of tasks instrumented in the interval.
-- **[`dropped_count`]**  
-  [`Gauge] The number of tasks dropped in the interval.
-- **[`first_poll_count`]**  
-  [`Gauge`] The number of tasks polled for the first time in the interval.
-- **[`total_first_poll_delay`]**  
-  [`Counter`] The total duration elapsed between the instant tasks are instrumented, and the instant they are first polled.
-- **[`total_idled_count`]**  
-  [`Counter`] The total number of times that tasks idled, waiting to be awoken.
-- **[`total_idle_duration`]**  
-  [`Counter`] The total duration that tasks idled.
-- **[`total_scheduled_count`]**  
-  [`Counter`] The total number of times that tasks were awoken (and then, presumably, scheduled for execution).
-- **[`total_scheduled_duration`]**  
-  [`Counter`] The total duration that tasks spent waiting to be polled after awakening.
-- **[`total_poll_count`]**  
-  [`Counter`] The total number of times that tasks were polled.
-- **[`total_poll_duration`]**  
-  [`Counter`] The total duration elapsed during polls.
-- **[`total_fast_poll_count`]**  
-  [`Counter`] The total number of times that polling tasks completed swiftly.
-- **[`total_fast_poll_duration`]**  
-  [`Counter`] The total duration of fast polls.
-- **[`total_slow_poll_count`]**  
-  [`Counter`] The total number of times that polling tasks completed slowly.
-- **[`total_slow_poll_duration`]**  
-  [`Counter`] The total duration of slow polls.
-- **[`total_short_delay_count`]**  
-  [`Counter`] The total count of short scheduling delays.
-- **[`total_short_delay_duration`]**  
-  [`Counter`] The total duration of short scheduling delays.
-- **[`total_long_delay_count`]**  
-  [`Counter`] The total count of long scheduling delays.
-- **[`total_long_delay_duration`]**  
-  [`Counter`] The total duration of long scheduling delays.
+- **[`instrumented_count`]** | type: Gauge  
+  The number of tasks instrumented in the interval.
+- **[`dropped_count`]** | type: Gauge
+  The number of tasks dropped in the interval.
+- **[`first_poll_count`]** | type: Gauge  
+  The number of tasks polled for the first time in the interval.
+- **[`total_first_poll_delay`]** | type: Counter
+  The total duration elapsed between the instant tasks are instrumented, and the instant they are first polled.
+- **[`total_idled_count`]** | type: Counter
+  The total number of times that tasks idled, waiting to be awoken.
+- **[`total_idle_duration`]** | type: Counter
+  The total duration that tasks idled.
+- **[`total_scheduled_count`]** | type: Counter
+  The total number of times that tasks were awoken (and then, presumably, scheduled for execution).
+- **[`total_scheduled_duration`]** | type: Counter
+  The total duration that tasks spent waiting to be polled after awakening.
+- **[`total_poll_count`]** | type: Counter
+  The total number of times that tasks were polled.
+- **[`total_poll_duration`]** | type: Counter
+  The total duration elapsed during polls.
+- **[`total_fast_poll_count`]** | type: Counter
+  The total number of times that polling tasks completed swiftly.
+- **[`total_fast_poll_duration`]** | type: Counter
+  The total duration of fast polls.
+- **[`total_slow_poll_count`]** | type: Counter
+  The total number of times that polling tasks completed slowly.
+- **[`total_slow_poll_duration`]** | type: Counter
+  The total duration of slow polls.
+- **[`total_short_delay_count`]** | type: Counter
+  The total count of short scheduling delays.
+- **[`total_short_delay_duration`]** | type: Counter
+  The total duration of short scheduling delays.
+- **[`total_long_delay_count`]** | type: Counter
+  The total count of long scheduling delays.
+- **[`total_long_delay_duration`]** | type: Counter
+  The total duration of long scheduling delays.
 
 [`instrumented_count`]: https://docs.rs/tokio-metrics/0.2.*/tokio_metrics/struct.TaskMetrics.html#structfield.instrumented_count
 [`dropped_count`]: https://docs.rs/tokio-metrics/0.2.*/tokio_metrics/struct.TaskMetrics.html#structfield.dropped_count
