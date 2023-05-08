@@ -21,6 +21,8 @@
 //!     // construct a TaskMonitor
 //!     let monitor = tokio_metrics_collector::TaskMonitor::new();
 //!     // add this monitor to task collector with label 'simple_task'
+//!     // please use unique labels for each monitor and
+//!     // instrument multiple tasks by the `instrument` function.
 //!     task_collector.add("simple_task", monitor.clone());
 //!
 //!     // spawn a background task and instrument
