@@ -267,34 +267,26 @@ impl TaskMetrics {
     fn update(&self, label: &str, data: TaskMetricsData) {
         macro_rules! update_counter {
             ( $field:ident,  "int" ) => {{
-                // let past = self.$field.with_label_values(&[label]).get() as u64;
-                // let new = data.$field as u64;
-                // debug_assert!(new >= past, "new: {new} >= past: {past}");
-                // self.$field
-                //     .with_label_values(&[label])
-                //     .inc_by(new.saturating_sub(past));
                 let new = data.$field as u64;
                 self.$field.with_label_values(&[label]).inc_by(new);
             }};
             ( $field:ident,  "duration" ) => {{
-                // let past = self.$field.with_label_values(&[label]).get();
-                // let new = data.$field.as_secs_f64();
-                // debug_assert!(new >= past, "new: {new} >= past: {past}");
-                // self.$field.with_label_values(&[label]).inc_by(new - past);
                 let new = data.$field.as_secs_f64();
                 self.$field.with_label_values(&[label]).inc_by(new);
             }};
         }
 
-        self.instrumented_count
-            .with_label_values(&[label])
-            .set(data.instrumented_count as i64);
-        self.dropped_count
-            .with_label_values(&[label])
-            .set(data.dropped_count as i64);
-        self.first_poll_count
-            .with_label_values(&[label])
-            .set(data.first_poll_count as i64);
+        macro_rules! update_gauge {
+            ( $field:ident) => {
+                self.$field
+                    .with_label_values(&[label])
+                    .set(data.$field as i64);
+            };
+        }
+
+        update_gauge!(instrumented_count);
+        update_gauge!(dropped_count);
+        update_gauge!(first_poll_count);
 
         update_counter!(total_first_poll_delay, "duration");
         update_counter!(total_idled_count, "int");
