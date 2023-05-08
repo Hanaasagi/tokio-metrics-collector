@@ -6,6 +6,8 @@ use prometheus::{
     proto, CounterVec, IntCounterVec, IntGaugeVec,
 };
 use std::collections::HashMap;
+use std::sync::atomic::AtomicI64;
+use std::sync::atomic::Ordering;
 
 use tokio_metrics::TaskMetrics as TaskMetricsData;
 use tokio_metrics::TaskMonitor;
@@ -34,6 +36,10 @@ struct TaskMetrics {
     total_long_delay_count: IntCounterVec,
     total_short_delay_duration: CounterVec,
     total_long_delay_duration: CounterVec,
+
+    _prev_instrumented_count: AtomicI64,
+    _prev_dropped_count: AtomicI64,
+    _prev_first_poll_count: AtomicI64,
 }
 
 impl TaskMetrics {
@@ -238,6 +244,11 @@ impl TaskMetrics {
             total_long_delay_count,
             total_short_delay_duration,
             total_long_delay_duration,
+
+            // private
+            _prev_instrumented_count: AtomicI64::default(),
+            _prev_dropped_count: AtomicI64::default(),
+            _prev_first_poll_count: AtomicI64::default(),
         }
     }
 
@@ -259,15 +270,20 @@ impl TaskMetrics {
             }};
         }
 
-        self.instrumented_count
-            .with_label_values(&[label])
-            .set(data.instrumented_count as i64);
-        self.dropped_count
-            .with_label_values(&[label])
-            .set(data.dropped_count as i64);
-        self.first_poll_count
-            .with_label_values(&[label])
-            .set(data.first_poll_count as i64);
+        macro_rules! update_gauge {
+            ( $field:ident, $prev_field:ident) => {{
+                let v = self.$prev_field.load(Ordering::Relaxed);
+                self.$field
+                    .with_label_values(&[label])
+                    .set(data.$field as i64 - v);
+                self.$prev_field
+                    .store(data.$field as i64, Ordering::Relaxed);
+            }};
+        }
+
+        update_gauge!(instrumented_count, _prev_instrumented_count);
+        update_gauge!(dropped_count, _prev_dropped_count);
+        update_gauge!(first_poll_count, _prev_first_poll_count);
 
         update_counter!(total_first_poll_delay, "duration");
         update_counter!(total_idled_count, "int");
@@ -355,6 +371,9 @@ impl TaskCollector {
 
     /// Add a [`TaskMonitor`] to collector.
     pub fn add(&self, label: &str, monitor: TaskMonitor) {
+        if self.producer.read().contains_key(label) {
+            panic!("existed");
+        }
         self.producer.write().insert(label.to_string(), monitor);
     }
 
