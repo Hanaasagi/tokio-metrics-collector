@@ -23,11 +23,13 @@ async fn main() {
 
     // create a monitor for collecting `user` metrics
     let monitor_get_user = tokio_metrics_collector::TaskMonitor::new();
-    task_collector.add("get_user", monitor_get_user.clone());
+    task_collector
+        .add("get_user", monitor_get_user.clone())
+        .unwrap();
 
     // create a monitor for collecting `send_email` metrics
     let email_monitor = tokio_metrics_collector::TaskMonitor::new();
-    task_collector.add("email", email_monitor.clone());
+    task_collector.add("email", email_monitor.clone()).unwrap();
 
     // create app
     let app = Router::new()
@@ -47,6 +49,7 @@ async fn main() {
             }),
         )
         .route("/metrics", get(metrics))
+        // share the monitor with routes
         .with_state(email_monitor);
 
     // bind and serve
@@ -63,9 +66,6 @@ async fn root() -> &'static str {
 
 async fn send_email(State(email_monitor): State<TaskMonitor>) -> &'static str {
     // Background task to send an email
-    // let task_collector = tokio_metrics_collector::default_task_collector();
-    // let email_monitor = tokio_metrics_collector::TaskMonitor::new();
-    // task_collector.add("email", email_monitor.clone());
     tokio::spawn(email_monitor.clone().instrument(async {
         tokio::time::sleep(Duration::from_secs(2)).await;
     }));
