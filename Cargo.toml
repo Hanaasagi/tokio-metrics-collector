@@ -18,7 +18,7 @@ rt = ["tokio"]
 [dependencies]
 lazy_static = "1.4.0"
 prometheus = "0.13.3"
-tokio-metrics = "0.2.2"
+tokio-metrics = "0.3.0"
 tokio = { version = "1.26.0", features = ["rt"], optional = true }
 parking_lot = "0.12.1"
 
