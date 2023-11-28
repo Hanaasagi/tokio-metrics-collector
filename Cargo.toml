@@ -23,7 +23,7 @@ tokio = { version = "1.31.0", features = ["rt"], optional = true }
 parking_lot = "0.12.1"
 
 [dev-dependencies]
-axum = "0.6.20"
+axum = "0.7.1"
 tokio = { version = "1.31.0", features = ["rt", "macros", "rt-multi-thread"]}
 tracing-subscriber = "0.3.18"
 
