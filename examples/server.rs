@@ -1,6 +1,5 @@
 use axum::extract::State;
 use axum::{routing::get, Router};
-use std::net::SocketAddr;
 use std::time::Duration;
 use tokio_metrics::TaskMonitor;
 
@@ -53,11 +52,10 @@ async fn main() {
         .with_state(email_monitor);
 
     // bind and serve
-    let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:8000")
         .await
         .unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
 async fn root() -> &'static str {
