@@ -93,7 +93,7 @@ impl RuntimeMetrics {
 
         let total_steal_operations = IntCounter::with_opts(
             Opts::new(
-                "tokio_total_seal_operations",
+                "tokio_total_steal_operations",
                 r#"The number of times worker threads stole tasks from another worker thread."#,
             )
             .namespace(namespace.clone()),
