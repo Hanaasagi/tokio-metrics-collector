@@ -41,7 +41,7 @@ impl Error for LabelAlreadyExists {}
 struct TaskMetrics {
     instrumented_count: IntGaugeVec,
     dropped_count: IntGaugeVec,
-    first_poll_count: IntGaugeVec,
+    first_poll_count: IntCounterVec,
     total_first_poll_delay: CounterVec,
     total_idled_count: IntCounterVec,
     total_idle_duration: CounterVec,
@@ -82,15 +82,14 @@ impl TaskMetrics {
         )
         .unwrap();
 
-        let first_poll_count = IntGaugeVec::new(
+        let first_poll_count = IntCounterVec::new(
             Opts::new(
                 "tokio_task_first_poll_count",
                 r#"The number of tasks polled for the first time."#,
             )
             .namespace(namespace.clone()),
             &[TASK_LABEL],
-        )
-        .unwrap();
+        ).unwrap();
 
         let total_first_poll_delay = CounterVec::new(
             Opts::new(
@@ -286,8 +285,8 @@ impl TaskMetrics {
 
         update_gauge!(instrumented_count);
         update_gauge!(dropped_count);
-        update_gauge!(first_poll_count);
 
+        update_counter!(first_poll_count, "int");
         update_counter!(total_first_poll_delay, "duration");
         update_counter!(total_idled_count, "int");
         update_counter!(total_idle_duration, "duration");
@@ -460,6 +459,8 @@ pub fn default_collector() -> &'static TaskCollector {
 
 #[cfg(test)]
 mod tests {
+    use std::thread;
+
     use super::*;
 
     #[test]
@@ -513,6 +514,57 @@ mod tests {
         );
         assert_eq!(metrics[0].get_metric().len(), 1);
         assert_eq!(metrics[0].get_metric()[0].get_gauge().get_value(), 1.0);
+    }
+
+    #[tokio::test]
+    async fn test_task_first_poll_count() {
+        let monitor = tokio_metrics::TaskMonitor::new();
+        let tc = TaskCollector::new("");
+
+        tc.add("custom", monitor.clone()).unwrap();
+
+        let mut interval = monitor.intervals();
+        let mut next_interval = || interval.next().unwrap();
+
+        // no tasks have been constructed, instrumented, and polled at least once
+        assert_eq!(next_interval().first_poll_count, 0);
+
+        let task = monitor.instrument(async {});
+        let task2 = monitor.instrument(async {});
+
+        // `task` has been constructed and instrumented, but has not yet been polled
+        assert_eq!(next_interval().first_poll_count, 0);
+
+        // poll `task` to completion
+        task.await;
+        task2.await;
+        // `task` has been constructed, instrumented, and polled at least once
+        assert_eq!(next_interval().first_poll_count, 2);
+
+        // since the last interval was produced, 0 tasks have been constructed, instrumented and polled
+        assert_eq!(next_interval().first_poll_count, 0);
+
+        let metrics = tc.collect();
+        assert_eq!(metrics.len(), METRICS_COUNT);
+        assert_eq!(metrics[2].get_name(), "tokio_task_first_poll_count");
+        assert_eq!(
+            metrics[2].get_help(),
+            "The number of tasks polled for the first time.".to_string()
+        );
+        assert_eq!(metrics[2].get_metric().len(), 1);
+        assert_eq!(metrics[2].get_metric()[0].get_counter().get_value(), 2.0);
+
+        // check levels again
+        assert_eq!(next_interval().first_poll_count, 0);
+
+        assert_eq!(metrics.len(), METRICS_COUNT);
+        assert_eq!(metrics[2].get_name(), "tokio_task_first_poll_count");
+        assert_eq!(
+            metrics[2].get_help(),
+            "The number of tasks polled for the first time.".to_string()
+        );
+        assert_eq!(metrics[2].get_metric().len(), 1);
+        assert_eq!(metrics[2].get_metric()[0].get_counter().get_value(), 2.0);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
