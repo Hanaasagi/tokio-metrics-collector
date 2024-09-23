@@ -186,6 +186,8 @@ rustdocflags = ["--cfg", "tokio_unstable"]
   The total count of long scheduling delays.
 - **[`total_long_delay_duration`]** | type: Counter
   The total duration of long scheduling delays.
+- **[`tokio_task_total_first_poll_count`]** | type: Counter
+  The total number of tasks polled for the first time.
 
 [`instrumented_count`]: https://docs.rs/tokio-metrics/0.2.*/tokio_metrics/struct.TaskMetrics.html#structfield.instrumented_count
 [`dropped_count`]: https://docs.rs/tokio-metrics/0.2.*/tokio_metrics/struct.TaskMetrics.html#structfield.dropped_count
