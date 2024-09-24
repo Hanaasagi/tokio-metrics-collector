@@ -15,7 +15,7 @@ use tokio_metrics::TaskMonitor;
 
 const TASK_LABEL: &str = "task";
 #[allow(unused)]
-const METRICS_COUNT: usize = 18;
+const METRICS_COUNT: usize = 19;
 
 #[derive(Debug)]
 pub struct LabelAlreadyExists {
@@ -49,6 +49,7 @@ struct TaskMetrics {
     total_scheduled_duration: CounterVec,
     total_poll_count: IntCounterVec,
     total_poll_duration: CounterVec,
+    total_first_poll_count: IntCounterVec,
     total_fast_poll_count: IntCounterVec,
     total_fast_poll_duration: CounterVec,
     total_slow_poll_count: IntCounterVec,
@@ -172,6 +173,16 @@ impl TaskMetrics {
         )
         .unwrap();
 
+        let total_first_poll_count = IntCounterVec::new(
+            Opts::new(
+                "tokio_task_total_first_poll_count",
+                r#"The total number of times that tasks were polled for the first time."#,
+            )
+            .namespace(namespace.clone()),
+            &[TASK_LABEL],
+        )
+        .unwrap();
+
         let total_fast_poll_duration = CounterVec::new(
             Opts::new(
                 "tokio_task_total_fast_poll_duration",
@@ -253,6 +264,7 @@ impl TaskMetrics {
             total_scheduled_duration,
             total_poll_count,
             total_poll_duration,
+            total_first_poll_count,
             total_fast_poll_count,
             total_fast_poll_duration,
             total_slow_poll_count,
@@ -268,6 +280,10 @@ impl TaskMetrics {
         macro_rules! update_counter {
             ( $field:ident,  "int" ) => {{
                 let new = data.$field as u64;
+                self.$field.with_label_values(&[label]).inc_by(new);
+            }};
+            ( $field:ident, $metrics_field:ident,  "int" ) => {{
+                let new = data.$metrics_field as u64;
                 self.$field.with_label_values(&[label]).inc_by(new);
             }};
             ( $field:ident,  "duration" ) => {{
@@ -295,6 +311,7 @@ impl TaskMetrics {
         update_counter!(total_scheduled_duration, "duration");
         update_counter!(total_poll_count, "int");
         update_counter!(total_poll_duration, "duration");
+        update_counter!(total_first_poll_count, first_poll_count, "int");
         update_counter!(total_fast_poll_count, "int");
         update_counter!(total_fast_poll_duration, "duration");
         update_counter!(total_slow_poll_count, "int");
@@ -317,6 +334,7 @@ impl TaskMetrics {
         desc.extend(self.total_scheduled_duration.desc());
         desc.extend(self.total_poll_count.desc());
         desc.extend(self.total_poll_duration.desc());
+        desc.extend(self.total_first_poll_count.desc());
         desc.extend(self.total_fast_poll_count.desc());
         desc.extend(self.total_fast_poll_duration.desc());
         desc.extend(self.total_slow_poll_count.desc());
@@ -326,7 +344,7 @@ impl TaskMetrics {
         desc.extend(self.total_short_delay_duration.desc());
         desc.extend(self.total_long_delay_duration.desc());
 
-        assert_eq!(desc.len(), 18);
+        assert_eq!(desc.len(), 19);
         desc
     }
 
@@ -342,6 +360,7 @@ impl TaskMetrics {
         metrics.extend(self.total_scheduled_duration.collect());
         metrics.extend(self.total_poll_count.collect());
         metrics.extend(self.total_poll_duration.collect());
+        metrics.extend(self.total_first_poll_count.collect());
         metrics.extend(self.total_fast_poll_count.collect());
         metrics.extend(self.total_fast_poll_duration.collect());
         metrics.extend(self.total_slow_poll_count.collect());
@@ -351,7 +370,7 @@ impl TaskMetrics {
         metrics.extend(self.total_short_delay_duration.collect());
         metrics.extend(self.total_long_delay_duration.collect());
 
-        assert_eq!(metrics.len(), 18);
+        assert_eq!(metrics.len(), 19);
         metrics
     }
 }
@@ -553,6 +572,69 @@ mod tests {
             .encode(&prometheus::default_registry().gather(), &mut buffer)
             .expect("Failed to encode");
         String::from_utf8(buffer.clone()).expect("Failed to convert to string.");
+    }
+
+    #[tokio::test]
+    async fn test_task_first_poll_count() {
+        let monitor = tokio_metrics::TaskMonitor::new();
+        let tc = TaskCollector::new("");
+
+        tc.add("custom", monitor.clone()).unwrap();
+
+        let mut interval = monitor.intervals();
+        let mut next_interval = || interval.next().unwrap();
+
+        // no tasks have been constructed, instrumented, and polled at least once
+        assert_eq!(next_interval().first_poll_count, 0);
+
+        let task = monitor.instrument(async {});
+
+        // `task` has been constructed and instrumented, but has not yet been polled
+        assert_eq!(next_interval().first_poll_count, 0);
+
+        // poll `task` to completion
+        task.await;
+
+        // `task` has been constructed, instrumented, and polled at least once
+        assert_eq!(next_interval().first_poll_count, 1);
+
+        let metrics = tc.collect();
+        let gauge_index = metrics
+            .iter()
+            .position(|m| m.get_name() == "tokio_task_first_poll_count")
+            .unwrap();
+
+        let counter_index = metrics
+            .iter()
+            .position(|m| m.get_name() == "tokio_task_total_first_poll_count")
+            .unwrap();
+
+        assert_eq!(
+            metrics[gauge_index].get_metric()[0].get_gauge().get_value(),
+            1.0
+        );
+        assert_eq!(
+            metrics[counter_index].get_metric()[0]
+                .get_counter()
+                .get_value(),
+            1.0
+        );
+
+        let task2 = monitor.instrument(async {});
+        task2.await;
+
+        let metrics = tc.collect();
+        assert_eq!(
+            metrics[gauge_index].get_metric()[0].get_gauge().get_value(),
+            1.0
+        );
+        // check total counter - 2
+        assert_eq!(
+            metrics[counter_index].get_metric()[0]
+                .get_counter()
+                .get_value(),
+            2.0
+        );
     }
 
     #[test]
