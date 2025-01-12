@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Setup Rust
         run: |
-          rustup toolchain install nightly --component rust-src
+          rustup toolchain install nightly --component rust-src llvm-tools-preview
           rustup default nightly
       - name: Install grcov
         run: cargo install grcov
