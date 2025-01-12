@@ -43,7 +43,7 @@ struct RuntimeMetrics {
     total_busy_duration: Counter,
     // pub max_busy_duration: Duration,
     // pub min_busy_duration: Duration,
-    injection_queue_depth: IntGauge,
+    global_queue_depth: IntGauge,
     total_local_queue_depth: IntGauge,
     // pub max_local_queue_depth: usize,
     // pub min_local_queue_depth: usize,
@@ -145,9 +145,9 @@ impl RuntimeMetrics {
         )
         .unwrap();
 
-        let injection_queue_depth = IntGauge::with_opts(
+        let global_queue_depth = IntGauge::with_opts(
             Opts::new(
-                "tokio_injection_queue_depth",
+                "tokio_global_queue_depth",
                 r#"The number of tasks currently scheduled in the runtime’s injection queue."#,
             )
             .namespace(namespace.clone()),
@@ -201,7 +201,7 @@ impl RuntimeMetrics {
             total_overflow_count,
             total_polls_count,
             total_busy_duration,
-            injection_queue_depth,
+            global_queue_depth,
             total_local_queue_depth,
             elapsed,
             budget_forced_yield_count,
@@ -240,8 +240,7 @@ impl RuntimeMetrics {
         update_counter!(total_polls_count, "int");
         update_counter!(total_busy_duration, "duration");
 
-        self.injection_queue_depth
-            .set(data.injection_queue_depth as i64);
+        self.global_queue_depth.set(data.global_queue_depth as i64);
 
         self.total_local_queue_depth
             .set(data.total_local_queue_depth as i64);
@@ -262,7 +261,7 @@ impl RuntimeMetrics {
         desc.extend(self.total_overflow_count.desc());
         desc.extend(self.total_polls_count.desc());
         desc.extend(self.total_busy_duration.desc());
-        desc.extend(self.injection_queue_depth.desc());
+        desc.extend(self.global_queue_depth.desc());
         desc.extend(self.total_local_queue_depth.desc());
         desc.extend(self.elapsed.desc());
         desc.extend(self.budget_forced_yield_count.desc());
@@ -285,7 +284,7 @@ impl RuntimeMetrics {
         metrics.extend(self.total_overflow_count.collect());
         metrics.extend(self.total_polls_count.collect());
         metrics.extend(self.total_busy_duration.collect());
-        metrics.extend(self.injection_queue_depth.collect());
+        metrics.extend(self.global_queue_depth.collect());
         metrics.extend(self.total_local_queue_depth.collect());
         metrics.extend(self.elapsed.collect());
         metrics.extend(self.budget_forced_yield_count.collect());
