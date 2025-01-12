@@ -21,16 +21,21 @@ jobs:
         run: |
           rustup toolchain install nightly --component rust-src
           rustup default nightly
+      - name: Install grcov
+        run: cargo install grcov
       - name: Build
         run: cargo build --verbose
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --verbose --all-features --no-fail-fast
         env:
           CARGO_INCREMENTAL: "0"
-          RUSTFLAGS: "--cfg tokio_unstable -Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests"
-          RUSTDOCFLAGS: "--cfg tokio_unstable -Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests"
-      - name: rust-grcov
-        uses: actions-rs/grcov@v0.1.6
+          LLVM_PROFILE_FILE: "coverage-%p-%m.profraw"
+          RUSTFLAGS: "--cfg tokio_unstable -Cinstrument-coverage -Ccodegen-units=1 -Cllvm-args=--inline-threshold=0 -Coverflow-checks=off -Cpanic=unwind -Zpanic_abort_tests"
+          RUSTDOCFLAGS: "--cfg tokio_unstable -Cinstrument-coverage -Ccodegen-units=1 -Cllvm-args=--inline-threshold=0 -Coverflow-checks=off -Cpanic=unwind -Zpanic_abort_tests"
+      - name: Generate Coverage Report
+        run: |
+          mkdir -p coverage
+          grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o coverage/lcov.info
       - name: Codecov
         uses: codecov/codecov-action@v4.3.0
         with:
