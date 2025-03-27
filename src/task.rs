@@ -525,13 +525,13 @@ mod tests {
 
         let metrics = tc.collect();
         assert_eq!(metrics.len(), METRICS_COUNT);
-        assert_eq!(metrics[0].get_name(), "tokio_task_instrumented_count");
+        assert_eq!(metrics[0].name(), "tokio_task_instrumented_count");
         assert_eq!(
-            metrics[0].get_help(),
+            metrics[0].help(),
             "The number of tasks instrumented.".to_string()
         );
         assert_eq!(metrics[0].get_metric().len(), 1);
-        assert_eq!(metrics[0].get_metric()[0].get_gauge().get_value(), 1.0);
+        assert_eq!(metrics[0].get_metric()[0].get_gauge().value(), 1.0);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
@@ -540,9 +540,9 @@ mod tests {
         assert_eq!(collector.desc().len(), METRICS_COUNT);
         let metrics = collector.collect();
         assert_eq!(metrics.len(), METRICS_COUNT);
-        assert_eq!(metrics[0].get_name(), "tokio_task_instrumented_count");
+        assert_eq!(metrics[0].name(), "tokio_task_instrumented_count");
         assert_eq!(
-            metrics[0].get_help(),
+            metrics[0].help(),
             "The number of tasks instrumented.".to_string()
         );
         assert_eq!(metrics[0].get_metric().len(), 0);
@@ -601,22 +601,20 @@ mod tests {
         let metrics = tc.collect();
         let gauge_index = metrics
             .iter()
-            .position(|m| m.get_name() == "tokio_task_first_poll_count")
+            .position(|m| m.name() == "tokio_task_first_poll_count")
             .unwrap();
 
         let counter_index = metrics
             .iter()
-            .position(|m| m.get_name() == "tokio_task_total_first_poll_count")
+            .position(|m| m.name() == "tokio_task_total_first_poll_count")
             .unwrap();
 
         assert_eq!(
-            metrics[gauge_index].get_metric()[0].get_gauge().get_value(),
+            metrics[gauge_index].get_metric()[0].get_gauge().value(),
             1.0
         );
         assert_eq!(
-            metrics[counter_index].get_metric()[0]
-                .get_counter()
-                .get_value(),
+            metrics[counter_index].get_metric()[0].get_counter().value(),
             1.0
         );
 
@@ -625,14 +623,12 @@ mod tests {
 
         let metrics = tc.collect();
         assert_eq!(
-            metrics[gauge_index].get_metric()[0].get_gauge().get_value(),
+            metrics[gauge_index].get_metric()[0].get_gauge().value(),
             1.0
         );
         // check total counter - 2
         assert_eq!(
-            metrics[counter_index].get_metric()[0]
-                .get_counter()
-                .get_value(),
+            metrics[counter_index].get_metric()[0].get_counter().value(),
             2.0
         );
     }
