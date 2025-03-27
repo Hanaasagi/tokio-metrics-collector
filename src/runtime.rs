@@ -396,13 +396,13 @@ mod tests {
 
         let metrics = rc.collect();
         assert_eq!(metrics.len(), METRICS_COUNT);
-        assert_eq!(metrics[0].get_name(), "tokio_workers_count");
+        assert_eq!(metrics[0].name(), "tokio_workers_count");
         assert_eq!(
-            metrics[0].get_help(),
+            metrics[0].help(),
             "The number of worker threads used by the runtime."
         );
         assert_eq!(metrics[0].get_metric().len(), 1);
-        assert_eq!(metrics[0].get_metric()[0].get_gauge().get_value(), 1.0);
+        assert_eq!(metrics[0].get_metric()[0].get_gauge().value(), 1.0);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
@@ -411,14 +411,14 @@ mod tests {
         assert_eq!(collector.desc().len(), METRICS_COUNT);
         let metrics = collector.collect();
         assert_eq!(metrics.len(), METRICS_COUNT);
-        assert_eq!(metrics[0].get_name(), "tokio_workers_count");
+        assert_eq!(metrics[0].name(), "tokio_workers_count");
         assert_eq!(
-            metrics[0].get_help(),
+            metrics[0].help(),
             "The number of worker threads used by the runtime."
         );
         assert_eq!(metrics[0].get_metric().len(), 1);
         // 8 worker threads
-        assert_eq!(metrics[0].get_metric()[0].get_gauge().get_value(), 8.0);
+        assert_eq!(metrics[0].get_metric()[0].get_gauge().value(), 8.0);
     }
 
     #[tokio::test]
