@@ -37,7 +37,7 @@ jobs:
           mkdir -p coverage
           grcov . --binary-path ./target/debug/ -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o coverage/lcov.info
       - name: Codecov
-        uses: codecov/codecov-action@v4.3.0
+        uses: codecov/codecov-action@v5.4.2
         with:
           fail_ci_if_error: true # optional (default = false)
           flags: unittests # optional
